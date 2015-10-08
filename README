@@ -1,0 +1,11 @@
+Binary Restricted Boltzmann Machine using k-step Contrastive Divergence.
+
+Run: ./run.sh
+
+Refs:
+   Fischer, Asja, and Christian Igel. "Training restricted Boltzmann machines: an introduction." Pattern Recognition 47.1 (2014): 25-39.
+   Hinton, Geoffrey. "A practical guide to training restricted Boltzmann machines." Momentum 9.1 (2010): 926.
+   Chang, Chih-Chung, and Chih-Jen Lin. "LIBSVM: A library for support vector machines." ACM Transactions on Intelligent Systems and Technology (TIST) 2.3 (2011): 27.
+   http://deeplearning.net/tutorial/rbm.html
+   20 news data set http://qwone.com/~jason/20Newsgroups/
+
