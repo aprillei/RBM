@@ -93,20 +93,23 @@ void rbm::train(float ** weights, float * visible_bias, float * hidden_bias){
     // random indexes of the data points that will be chosen at each iteration of sga
     int * idxes_batch = new int[size_minibatch];
 
+	int inner_iter = number_of_data_points/num_epochs;
     // Perform K-step cd num_epochs time
     for (int iter=0; iter<num_epochs; iter++){
-        // sample minibatch and perform cd on this mini batch
-        // sample minibatch
-        rand_init_vec_int(idxes_batch, size_minibatch, number_of_data_points);
+		for (int i=0; i<inner_iter; i++){	
+       		// sample minibatch and perform cd on this mini batch
+        	// sample minibatch
+        	rand_init_vec_int(idxes_batch, size_minibatch, number_of_data_points);
 
-        // set deltas to zeros at every iteration in cd
-        cd(weights, hidden_bias, visible_bias, delta_weights, delta_hidden_bias,
-                delta_visible_bias, K, idxes_batch, size_minibatch);
+        	// set deltas to zeros at every iteration in cd
+        	cd(weights, hidden_bias, visible_bias, delta_weights, delta_hidden_bias,
+            	    delta_visible_bias, K, idxes_batch, size_minibatch);
 
-        // update parameters
-        update_weights(weights, delta_weights, learning_rate, num_hidden_units, num_visible_units, size_minibatch);
-        update_visible_bias(visible_bias, delta_visible_bias, learning_rate, num_visible_units, size_minibatch);
-        update_hidden_bias(hidden_bias, delta_hidden_bias, learning_rate, num_hidden_units, size_minibatch);
+        	// update parameters
+        	update_weights(weights, delta_weights, learning_rate, num_hidden_units, num_visible_units, size_minibatch);
+        	update_visible_bias(visible_bias, delta_visible_bias, learning_rate, num_visible_units, size_minibatch);
+        	update_hidden_bias(hidden_bias, delta_hidden_bias, learning_rate, num_hidden_units, size_minibatch);
+		}
     }
 
     // release data
