@@ -46,6 +46,11 @@ RAW_RESULTS_FILE=$RESULTS"raw_results"
 DL_RESULTS_FILE=$RESULTS"dl_results"
 RBM_RESULTS_FILE=$RESULTS"rbm_results"
 
+mkdir dataset
+mkdir learned_features
+mkdir results
+mkdir parameters
+
 # Download dataset
 python $DOWNLOAD_SCRIPT $DATASET
 

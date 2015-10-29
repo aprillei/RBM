@@ -1,4 +1,4 @@
-Binary Restricted Boltzmann Machine using k-step Contrastive Divergence.
+Binary Restricted Boltzmann Machines using k-step Contrastive Divergence.
 
 Run: ./run.sh
 
