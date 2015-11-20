@@ -7,6 +7,7 @@
 #include "rbm.h"
 #include "rbm_util.h"
 #include "util.h"
+#include <random>
 
 rbm::rbm(rbm_paras para, int n_data_points){
     num_visible_units = para.num_visible_units;
@@ -59,21 +60,26 @@ void rbm::forward_activation(float ** weights, float * hidden_bias, float * visi
 }
 
 // randomly initialize weights and biases
+//void rbm::init_paras(float ** weights, float * visible_bias, float * hidden_bias, const char * init_weights_file, const char * init_hidden_bias_file, const char * init_visible_bias_file){
 void rbm::init_paras(float ** weights, float * visible_bias, float * hidden_bias){
+    srand(time(NULL));
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution(0.0,0.01);
+
     for (int i=0; i<num_hidden_units; i++){
         for (int j=0; j<num_visible_units; j++){
-                // Initialize weights: sample uniformly between -4*sqrt(6./(num_visible_units+num_hidden_units))
-                // and  4*sqrt(6./(num_visible_units+num_hidden_units))
-            weights[i][j] = (randfloat()*2-1)*4*sqrt(6/(num_visible_units+num_hidden_units));
+            weights[i][j] = distribution(generator);
         }
     }
 
-    for (int i=0; i<num_visible_units ; i++){
-        visible_bias[i] = randfloat();
+    // Initialize the hidden bias
+    for (int i=0; i<num_hidden_units; i++){
+        hidden_bias[i] = randfloat();
     }
 
-    for (int j=0; j<num_hidden_units; j++){
-        hidden_bias[j] = randfloat();
+    // Initialize the visible bias
+    for (int i=0; i<num_visible_units; i++){
+        visible_bias[i] = randfloat();
     }
 }
 
@@ -90,19 +96,30 @@ void rbm::train(float ** weights, float * visible_bias, float * hidden_bias){
     float * delta_hidden_bias = new float[num_hidden_units];
     float * delta_visible_bias = new float[num_visible_units];
 
+    float ** features = new float*[number_of_data_points];
+    for (int i=0; i<number_of_data_points; i++){
+        features[i] = new float[num_visible_units];
+    }
+
+    for (int i=0; i<number_of_data_points; i++){
+        for (int j=0; j<num_visible_units; j++){
+            features[i][j] = input_features[i][j];
+        }
+    }
+
     // random indexes of the data points that will be chosen at each iteration of sga
     int * idxes_batch = new int[size_minibatch];
 
 	int inner_iter = number_of_data_points/num_epochs;
     // Perform K-step cd num_epochs time
     for (int iter=0; iter<num_epochs; iter++){
-		for (int i=0; i<inner_iter; i++){	
+		for (int i=0; i<inner_iter; i++){
        		// sample minibatch and perform cd on this mini batch
         	// sample minibatch
         	rand_init_vec_int(idxes_batch, size_minibatch, number_of_data_points);
 
         	// set deltas to zeros at every iteration in cd
-        	cd(weights, hidden_bias, visible_bias, delta_weights, delta_hidden_bias,
+        	cd(features, weights, hidden_bias, visible_bias, delta_weights, delta_hidden_bias,
             	    delta_visible_bias, K, idxes_batch, size_minibatch);
 
         	// update parameters
@@ -117,8 +134,15 @@ void rbm::train(float ** weights, float * visible_bias, float * hidden_bias){
     delete[] delta_hidden_bias;
     delete[] delta_visible_bias;
 
-    // TODO call delete again on delta_weights
+    for (int i=0; i<num_hidden_units; i++){
+        delete[] delta_weights[i];
+    }
     delete[] delta_weights;
+
+    for (int i=0; i<number_of_data_points; i++){
+        delete[] features[i];
+    }
+    delete[] features;
 //    std::cout << "Training model: DONE" << std::endl;
 }
 
@@ -138,6 +162,10 @@ void rbm::run(std::string model_weight_file, std::string model_visible_bias_file
     }
 
     init_paras(weights, visible_bias, hidden_bias);
+//	std::string in_weights = "init_weights";
+//	std::string in_hidden = "init_hidden";
+//	std::string in_visible = "init_visible";
+//    init_paras(weights, visible_bias, hidden_bias, in_weights.c_str(), in_hidden.c_str(), in_visible.c_str());
 
     // train rbm
     train(weights, visible_bias, hidden_bias);
@@ -146,33 +174,29 @@ void rbm::run(std::string model_weight_file, std::string model_visible_bias_file
     save_model(weights, visible_bias, hidden_bias, model_weight_file.c_str(),
                 model_visible_bias_file.c_str(), model_hidden_bias_file.c_str());
 
+    for (int i=0; i<num_hidden_units; i++){
+        delete[] weights[i];
+    }
     delete[] weights;
-    // TODO call delete again on weights
 
     delete[] visible_bias;
     delete[] hidden_bias;
 }
 
 // Gradient ascent update for the weights
-// TODO Q
 void rbm::update_weights(float ** weights, float ** delta_weights, float learning_rate, int n, int m, float size_mBatch){
-//    multiply_constant_matrix(delta_weights,learning_rate/size_mBatch, n, m);
     multiply_constant_matrix(delta_weights,learning_rate, n, m);
     add_matrix(weights, delta_weights, n, m);
 }
 
 // Gradient ascent update for the visible bias
-// TODO Q
 void rbm::update_visible_bias(float * visible_bias, float * delta_visible_bias, float learning_rate, int m, float size_mBatch){
-//    multiply_constant_vector(delta_visible_bias,learning_rate/size_mBatch,m);
     multiply_constant_vector(delta_visible_bias,learning_rate,m);
     add_vector(visible_bias, delta_visible_bias,m);
 }
 
 // Gradient ascent update for the hidden bias
-// TODO Q
 void rbm::update_hidden_bias(float * hidden_bias, float * delta_hidden_bias, float learning_rate, int n, float size_mBatch){
-//    multiply_constant_vector(delta_hidden_bias, learning_rate/size_mBatch, n);
     multiply_constant_vector(delta_hidden_bias, learning_rate, n);
     add_vector(hidden_bias,delta_hidden_bias,n);
 }
@@ -182,7 +206,9 @@ void rbm::update_hidden_bias(float * hidden_bias, float * delta_hidden_bias, flo
 // TODO compute pseudo likelihood
 // S: Sample -> Indexes of the elements in the sample considered
 // size(S) = size_mBatch
-void rbm::cd(float ** weights, float * hidden_bias, float * visible_bias, float ** delta_weights, float * delta_hidden_bias,
+//void rbm::cd(float ** weights, float * hidden_bias, float * visible_bias, float ** delta_weights, float * delta_hidden_bias,
+ //       float * delta_visible_bias, int K, int * S, int size_mBatch){
+void rbm::cd(float ** features, float ** weights, float * hidden_bias, float * visible_bias, float ** delta_weights, float * delta_hidden_bias,
         float * delta_visible_bias, int K, int * S, int size_mBatch){
     // initialize delta_weights and delta_biases to 0s
     for (int i=0; i<num_hidden_units; i++){
@@ -192,15 +218,14 @@ void rbm::cd(float ** weights, float * hidden_bias, float * visible_bias, float 
     memset(delta_visible_bias, 0, sizeof(float)*num_visible_units);
 
     for (int i=0; i<size_mBatch; i++){
-        cd_single_data(S[i], weights, hidden_bias, visible_bias, delta_weights,
+        cd_single_data(features[S[i]], weights, hidden_bias, visible_bias, delta_weights,
                     delta_hidden_bias, delta_visible_bias, K);
     }
 }
 
-void rbm::cd_single_data(int idx_data, float ** weights, float * hidden_bias, float * visible_bias, float ** delta_weights,
+void rbm::cd_single_data(float * features_idx, float ** weights, float * hidden_bias, float * visible_bias, float ** delta_weights,
                     float * delta_hidden_bias, float * delta_visible_bias, int K){
 
-    float * v_0 = new float[num_visible_units];
     float * v = new float[num_visible_units];
     float * h = new float[num_hidden_units];
 
@@ -211,8 +236,7 @@ void rbm::cd_single_data(int idx_data, float ** weights, float * hidden_bias, fl
     float * wvc = new float[num_hidden_units];
     float * whb = new float[num_visible_units];
 
-    v_0 = input_features[idx_data];
-    copy_vec(v, v_0, num_visible_units);
+    copy_vec(v, features_idx, num_visible_units);
 
     // compute wv0
     multiply_matrix_vector(weights, v, wvc, num_hidden_units, num_visible_units);
@@ -242,12 +266,21 @@ void rbm::cd_single_data(int idx_data, float ** weights, float * hidden_bias, fl
 
         compute_probability_visible_given_hidden(whb, p_v, num_visible_units);
         sample_vector(v, p_v, num_visible_units);
-
     }
 
-    update_weights_gradient(delta_weights, v_0, v, p_0, p_h, num_hidden_units, num_visible_units);
-    update_visible_bias_gradient(delta_visible_bias, v_0, v, num_visible_units);
+    update_weights_gradient(delta_weights, features_idx, v, p_0, p_h, num_hidden_units, num_visible_units);
+    update_visible_bias_gradient(delta_visible_bias, features_idx, v, num_visible_units);
     update_hidden_bias_gradient(delta_hidden_bias, p_0, p_h, num_hidden_units);
+
+    delete[] v;
+    delete[] h;
+
+    delete[] p_h;
+    delete[] p_v;
+    delete[] p_0;
+
+    delete[] wvc;
+    delete[] whb;
 }
 
 // save model

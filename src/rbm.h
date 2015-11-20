@@ -34,6 +34,7 @@ class rbm{
 
         // randomly initialize weights and biases
         void init_paras(float ** weights, float * visible_bias, float * hidden_bias);
+//		void init_paras(float ** weights, float * visible_bias, float * hidden_bias, const char * init_weights_file, const char * init_hidden_bias_file, const char * init_visible_bias_file);
 
         // train model
         void train(float ** weights, float * visible_bias, float * hidden_bias);
@@ -55,12 +56,12 @@ class rbm{
         void update_hidden_bias(float * hidden_bias, float * delta_hidden_bias, float learning_rate, int n, float size_mBatch);
 
         // k-step cd on size_mBatch input samples given by S indexes
-        void cd(float ** weigths, float * hidden_bias, float * visible_bias,
+        void cd(float ** features, float ** weigths, float * hidden_bias, float * visible_bias,
                 float ** delta_weigths, float * delta_hidden_bias,
                 float * delta_visible_bias, int k, int * S, int size_mBatch);
 
         // k-step cd on a single data point
-        void cd_single_data(int idx_data, float ** weigths, float * hidden_bias, float * visible_bias,
+        void cd_single_data(float * features_idx, float ** weigths, float * hidden_bias, float * visible_bias,
                             float ** delta_weigths, float * delta_hidden_bias, float * delta_visible_bias, int k);
 
         // save model
